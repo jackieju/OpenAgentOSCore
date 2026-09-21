@@ -1,0 +1,19 @@
+{
+  "name": "open-agent-os-core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "OpenAgentOSCore —— 语音 Agent 的纯机制核心。不含任何意图知识/关键词/LLM 判别，只提供 FilterChain（可插拔 check 链）与 PluginHost（把插件作为独立子进程拉起，走 stdin/stdout NDJSON JSON-RPC）两块机制骨架。任何应用层（如 AIVoiceAgent）把意图路由等知识作为 filter/插件挂上来。",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./filter-chain": "./src/filter-chain.js",
+    "./plugin-host": "./src/plugin-host.js"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "check": "node --check src/filter-chain.js && node --check src/plugin-host.js && node --check src/index.js"
+  },
+  "license": "AGPL-3.0"
+}
