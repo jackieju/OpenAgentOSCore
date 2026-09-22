@@ -1,17 +1,19 @@
 # OpenAgentOSCore
 
-语音 Agent 的**纯机制核心**。从 AIVoiceAgent 的 `brain/` 拆分独立而来。
+> English | [简体中文](./README.zh-CN.md)
 
-## 定位
+The **pure-mechanism core** of a voice agent. Extracted as a standalone project from AIVoiceAgent's `brain/`.
 
-本项目**只提供机制骨架，不含任何意图知识**——没有 intents 表、没有关键词、不做 LLM 判别。这些"知识"由应用层（如 AIVoiceAgent）作为 filter / 插件挂上来。
+## What it is
 
-两块机制：
+This project **provides only the mechanism skeleton and contains no intent knowledge** — no intents table, no keywords, no LLM classification. That "knowledge" is attached by the application layer (e.g. AIVoiceAgent) as filters / plugins.
 
-- **`FilterChain`**（`src/filter-chain.js`）——可插拔的 check 链。用户消息进入主控后、落到默认 LLM 对话之前，逐个问已注册的 filter「这句话你要处理吗」，谁先给出非 pass 裁决就采纳它。filter 是纯判断器：输入只读快照，返回裁决数据，不产生副作用。
-- **`PluginHost`**（`src/plugin-host.js`）——把插件作为独立子进程拉起，走 stdin/stdout NDJSON（每行一条 JSON-RPC）。只要能读写 stdin/stdout JSON，插件可用任意语言写。契约：`init` / `onWake` / `onUtter` / `onExit`。
+Two mechanisms:
 
-## 用法
+- **`FilterChain`** (`src/filter-chain.js`) — a pluggable check chain. After a user message enters the main-control state and before it falls through to the default LLM conversation, each registered filter is asked in turn "do you want to handle this?". The first non-pass verdict wins. A filter is a pure decision-maker: it takes a read-only snapshot as input, returns verdict data, and produces no side effects.
+- **`PluginHost`** (`src/plugin-host.js`) — launches a plugin as an independent child process, communicating over stdin/stdout NDJSON (one JSON-RPC message per line). Any language that can read/write stdin/stdout JSON can be used to write a plugin. Contract: `init` / `onWake` / `onUtter` / `onExit`.
+
+## Usage
 
 ```js
 import { FilterChain, PluginHost } from "open-agent-os-core";
@@ -19,34 +21,40 @@ import { FilterChain, PluginHost } from "open-agent-os-core";
 const chain = new FilterChain(console.log).use({
   name: "my-filter",
   check({ text, images }) {
-    // 返回 null(=pass) / { action:"handled", speak } / { action:"takeover", ... }
+    // return null (=pass) / { action:"handled", speak } / { action:"takeover", ... }
     return null;
   },
 });
 
-const decision = await chain.run({ text: "你好", images: [] });
+const decision = await chain.run({ text: "hello", images: [] });
 
 const host = new PluginHost("my-plugin", {
   command: "node",
   args: ["plugin.js"],
-  cwd: "/path/to/plugin/dir", // 缺省回退 process.cwd()，核心不假设插件与自己同目录
+  cwd: "/path/to/plugin/dir", // defaults to process.cwd(); the core does not assume the plugin lives in its own directory
 });
 await host.start();
 ```
 
-## 依赖引用（供 AIVoiceAgent 等应用层）
+## Dependency reference (for application layers such as AIVoiceAgent)
 
-当前用本地 file: 依赖：
+Published on GitHub — reference it directly as a git dependency:
+
+```json
+{ "dependencies": { "open-agent-os-core": "github:jackieju/OpenAgentOSCore" } }
+```
+
+For local development you can also use a file: dependency:
 
 ```json
 { "dependencies": { "open-agent-os-core": "file:../OpenAgentOSCore" } }
 ```
 
-将来推上 GitHub 后，只需把这一行改成 `"github:jackieju/OpenAgentOSCore"`，import 代码无需改动。
+The import code is identical either way; switching only changes this one line.
 
-## 无外部依赖
+## No external dependencies
 
-仅用 Node 内置模块（`node:child_process`）。`npm run check` 做语法自检。
+Uses only Node built-in modules (`node:child_process`). `npm run check` performs a syntax self-check.
 
 ## License
 
